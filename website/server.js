@@ -13,8 +13,30 @@ passport.use(new DiscordStrategy({
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: process.env.REDIRECT_URI || 'http://localhost:5000/auth/discord/callback',
     scope: ['identify', 'guilds']
-}, (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
+}, async (accessToken, refreshToken, profile, done) => {
+    try {
+        // Fetch user's guilds using the access token
+        const fetch = require('node-fetch');
+        const guildsResponse = await fetch('https://discord.com/api/v10/users/@me/guilds', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        if (guildsResponse.ok) {
+            const guilds = await guildsResponse.json();
+            profile.guilds = guilds;
+        } else {
+            profile.guilds = [];
+        }
+        
+        profile.accessToken = accessToken;
+        return done(null, profile);
+    } catch (error) {
+        console.error('Error fetching guilds:', error);
+        profile.guilds = [];
+        return done(null, profile);
+    }
 }));
 
 passport.serializeUser((user, done) => {
