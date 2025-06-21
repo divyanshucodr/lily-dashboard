@@ -8,11 +8,15 @@ const { ensureAuthenticated, ensureGuildPermissions } = require('../middleware/a
 // Dashboard home - show user's guilds
 router.get('/', ensureAuthenticated, async (req, res) => {
     try {
-        // Filter guilds where user has MANAGE_GUILD permission
-        const managedGuilds = req.user.guilds.filter(guild => 
-            (guild.permissions & 0x20) === 0x20 || // MANAGE_GUILD
-            (guild.permissions & 0x8) === 0x8      // ADMINISTRATOR
-        );
+        let managedGuilds = [];
+        
+        if (req.user.guilds && Array.isArray(req.user.guilds)) {
+            // Filter guilds where user has MANAGE_GUILD permission
+            managedGuilds = req.user.guilds.filter(guild => 
+                (guild.permissions & 0x20) === 0x20 || // MANAGE_GUILD
+                (guild.permissions & 0x8) === 0x8      // ADMINISTRATOR
+            );
+        }
         
         res.render('dashboard', { 
             user: req.user, 
@@ -20,7 +24,11 @@ router.get('/', ensureAuthenticated, async (req, res) => {
         });
     } catch (error) {
         console.error('Dashboard error:', error);
-        res.status(500).send('Internal Server Error');
+        res.render('dashboard', { 
+            user: req.user, 
+            guilds: [],
+            error: 'Unable to load server list. Please try refreshing the page.'
+        });
     }
 });
 
